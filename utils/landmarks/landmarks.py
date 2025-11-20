@@ -7,6 +7,20 @@ from pathlib import Path
 
 np.seterr(divide='raise', invalid='raise')
 
+def nn_parser(pose, left, right):
+    # Centrar todos los puntos para que tengan el centro de la cadera de referencia
+    v_hip_distance = pose[24] - pose[23]
+    origin = pose[24] - (v_hip_distance / 2)
+    origin = origin.reshape(1, 3)
+    pose = pose - origin
+    left = left - origin
+    right = right - origin
+    # Eliminar los puntos mano de la pose
+    mask = np.ones(pose.shape[0], dtype=bool)
+    mask[15:23] = False
+    pose = pose[mask]
+    return np.concatenate((pose, left, right), axis=0).flatten()
+
 class Landmarks:
     _neutral_hand = None
 
@@ -48,7 +62,7 @@ class Landmarks:
             yield arr[start - 1] + interpol_diff * (i + 1)
         yield None
 
-    def get_landmarks(self):
+    def get_landmarks(self, continuous=False):
         # Un generador que va retornando los landmarks a procesar
         current_frame = 0
         pose_interpolated = None
@@ -56,8 +70,11 @@ class Landmarks:
         while True:
             # Empezar interpolando los datos y sacando los rangos missing demasiado grandes
             # Empezar con el pose asi tengo algo de lo cual puedo agarrar las manos
-            if current_frame == len(self.pose[0]) - 1 or len(self.pose) == 0:
-                continue
+            if current_frame == len(self.pose):
+                if continuous:
+                    continue
+                else:
+                    break
 
             if pose_interpolated is not None: # Fijarme si estoy interpolando
                 pose_frame = next(pose_interpolated)
