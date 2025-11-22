@@ -13,19 +13,24 @@ HAND_CONNECTIONS = mp.solutions.hands.HAND_CONNECTIONS
 class VideoLSA64:
     _meta = None # Shared param over classes
 
-    def __init__(self, path, meta_path, save_path, fps=12):
+    def __init__(self, path, meta_path, save_path, sign_counter, fps=12):
         self.landmarks = Landmarks()
         self.fps = fps
         self.save_path = save_path
+        self.sign_counter = sign_counter
 
         # Load the csv
         if VideoLSA64._meta is None:
             _meta = pd.read_csv(meta_path)
         # Read the video
         self.cap = cv2.VideoCapture(path)
+
+        # Set the name and id
         file = path.name.split(".")[0].split("_")
         self.sign = str(int(file[0]))
-        self.id = str(int(file[1]) * int(file[2]))
+        id = self.sign_counter.get(self.sign, 0)
+        self.id = str(id)
+        self.sign_counter[self.sign] = id + 1
 
     def generate_landmarks(self, render=False):
         with mp.solutions.holistic.Holistic(model_complexity=2, static_image_mode=False) as holistic:
