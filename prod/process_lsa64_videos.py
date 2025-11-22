@@ -1,7 +1,7 @@
 import os
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from utils.LSA64_parser import VideoLSA64
+from utils.lsa64.LSA64_parser import VideoLSA64
 from tqdm import tqdm
 
 root_dir = Path(__file__).parent.parent

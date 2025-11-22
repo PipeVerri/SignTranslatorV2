@@ -64,9 +64,9 @@ class VideoLSA64:
         return os.path.exists(self.save_path / (self.sign + "_" + self.id + ".npy"))
 
 if __name__ == "__main__":
-    rh_path = "../data/LSA64/video/001_001_001.mp4"
-    bh_path = "../data/LSA64/video/031_001_001.mp4"
-    meta_path = "../data/LSA64/meta.csv"
+    rh_path = "../../data/LSA64/video/001_001_001.mp4"
+    bh_path = "../../data/LSA64/video/031_001_001.mp4"
+    meta_path = "../../data/LSA64/meta.csv"
     rec = VideoLSA64(rh_path, meta_path)
     rec.generate_landmarks()
     rec.render()
