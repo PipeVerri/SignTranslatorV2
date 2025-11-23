@@ -8,16 +8,27 @@ mp_drawing_styles = mp.solutions.drawing_styles
 POSE_CONNECTIONS = mp.solutions.pose.POSE_CONNECTIONS
 HAND_CONNECTIONS = mp.solutions.hands.HAND_CONNECTIONS
 
+# Module-level cache to track image metadata
+_image_metadata = {}
 
 def draw_landmarks_from_array(image, landmarks_array, connections=None,
                               color=(0, 255, 0), radius=2, thickness=1):
-
     if landmarks_array is None:
         return image
 
-    h, w, _ = image.shape
+    # Use image id to track metadata across calls
+    img_id = id(image)
 
-    # Convert normalized landmarks (may be <0 or >1)
+    # Check if we have metadata from previous calls
+    if img_id in _image_metadata:
+        orig_h, orig_w = _image_metadata[img_id]['original_shape']
+        curr_pad_top, curr_pad_left = _image_metadata[img_id]['current_padding']
+    else:
+        # First call - store original dimensions
+        orig_h, orig_w = image.shape[:2]
+        curr_pad_top, curr_pad_left = 0, 0
+
+    # Convert normalized landmarks relative to ORIGINAL dimensions
     points = []
     for lm in landmarks_array:
         if hasattr(lm, "x") and hasattr(lm, "y"):
@@ -25,20 +36,25 @@ def draw_landmarks_from_array(image, landmarks_array, connections=None,
         else:
             x_norm, y_norm = lm[0], lm[1]
 
-        x, y = int(x_norm * w), int(y_norm * h)
+        # Use original dimensions for denormalization
+        x, y = int(x_norm * orig_w), int(y_norm * orig_h)
+        # Apply current padding offset
+        x += curr_pad_left
+        y += curr_pad_top
         points.append((x, y))
 
-    # ---- Determine how much padding we need ----
+    # ---- Determine additional padding needed ----
+    h, w = image.shape[:2]
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
 
     min_x, max_x = min(xs), max(xs)
     min_y, max_y = min(ys), max(ys)
 
-    pad_left   = max(0, -min_x)
-    pad_top    = max(0, -min_y)
-    pad_right  = max(0, max_x - w)
-    pad_bottom = max(0, max_y - h)
+    pad_left = max(0, -min_x)
+    pad_top = max(0, -min_y)
+    pad_right = max(0, max_x - (w - 1))
+    pad_bottom = max(0, max_y - (h - 1))
 
     # ---- Create padded canvas if needed ----
     if any([pad_left, pad_top, pad_right, pad_bottom]):
@@ -47,9 +63,18 @@ def draw_landmarks_from_array(image, landmarks_array, connections=None,
 
         padded = np.zeros((new_h, new_w, 3), dtype=image.dtype)
         padded[pad_top:pad_top + h, pad_left:pad_left + w] = image
-        image = padded  # replace
 
-        # Shift all points due to padding
+        # Clean up old image metadata
+        if img_id in _image_metadata:
+            del _image_metadata[img_id]
+
+        image = padded
+
+        # Update cumulative padding
+        curr_pad_top += pad_top
+        curr_pad_left += pad_left
+
+        # Shift points by new padding
         points = [(x + pad_left, y + pad_top) for (x, y) in points]
 
     # ---- Draw landmarks ----
@@ -61,6 +86,12 @@ def draw_landmarks_from_array(image, landmarks_array, connections=None,
         for start_idx, end_idx in connections:
             if start_idx < len(points) and end_idx < len(points):
                 cv2.line(image, points[start_idx], points[end_idx], color, thickness)
+
+    # Store metadata for next call
+    _image_metadata[id(image)] = {
+        'original_shape': (orig_h, orig_w),
+        'current_padding': (curr_pad_top, curr_pad_left)
+    }
 
     return image
 

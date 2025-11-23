@@ -10,16 +10,21 @@ from pathlib import Path
 np.seterr(divide='raise', invalid='raise')
 
 def nn_parser(pose, left, right):
-    # Centrar todos los puntos para que tengan el centro de la cadera de referencia
-    v_hip_distance = pose[24] - pose[23]
-    origin = pose[24] - (v_hip_distance / 2)
-    origin = origin.reshape(1, 3)
-    pose = pose - origin
-    left = left - origin
-    right = right - origin
-    # Eliminar los puntos mano de la pose
+    # Centrar todos los puntos del cuerpo sean hip-centric, y los de la mano(excepto la muñeca) sean wrist centric
+    # Hip-centric
+    hip_distance_v = pose[24] - pose[23]
+    hip_center = pose[24] - (hip_distance_v / 2)
+    pose = pose - hip_center
+    left = left - hip_center
+    right = right - hip_center
+    # Wrist-centric
+    left[1:] = left[1:] - left[0].reshape(1, 3)
+    right[1:] = right[1:] - right[0].reshape(1, 3)
+
+    # Eliminar los puntos mano y cara(no la voy a usar por ahora) de la pose
     mask = np.ones(pose.shape[0], dtype=bool)
     mask[15:23] = False
+    mask[0:11] = False
     pose = pose[mask]
     return np.concatenate((pose, left, right), axis=0).flatten()
 
@@ -192,9 +197,10 @@ class Landmarks:
             hand_frame = hand_frame + wrist_pos
 
             # Escalar la mano para que tenga el ratio correcto
-            # (||v_mano|| * x) / ||v_antebrazo|| = 6.1 => ||v_mano|| * x = 6.1 * ||v_antebrazo|| => x  = ||v_mano|| * (6.1 * ||v_antebrazo||)
-            scale_factor = np.linalg.norm(hand_frame[9] - hand_frame[0]) / (6.1 * np.linalg.norm(pose_frame[wrist_num] - pose_frame[elbow_num]))
-            hand_frame = hand_frame * scale_factor
+            forearm_size = np.linalg.norm(pose_frame[elbow_num] - pose_frame[wrist_num])
+            hand_size = np.linalg.norm(hand_frame[0] - hand_frame[9])
+            target_hand_size = forearm_size / 6.1
+            hand_frame *= target_hand_size / hand_size
 
             # Ahora posicionar la mano en el lugar correcto. El wrist de la mano(0) en el wrist del pose(15)
             # mano_wrist_x + x = pose_wrist_x => x = pose_wrist_x - mano_wrist_x
