@@ -1,0 +1,10 @@
+# Requiere una version especifica de python
+name: mmpose-env
+channels:
+  - pytorch
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pytorch
+  - torchvision
