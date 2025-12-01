@@ -5,7 +5,7 @@ from src.mediapipe.parse import mp_to_arr
 import mediapipe as mp
 import cv2
 from matplotlib import pyplot as plt
-from utils.video import camera_reader
+from src.utils.video import camera_reader
 from src import Landmarks, nn_parser
 import numpy as np
 

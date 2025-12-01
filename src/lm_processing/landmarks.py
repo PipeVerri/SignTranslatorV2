@@ -2,7 +2,7 @@ import time
 
 from src.mediapipe.parse import mp_to_arr
 import numpy as np
-from utils.segment_tree import SegmentTree
+from src.utils.ds.segment_tree import SegmentTree
 from dataclasses import dataclass, field
 from typing import List, Dict
 from pathlib import Path

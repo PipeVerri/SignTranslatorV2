@@ -2,10 +2,10 @@ import threading
 import queue
 import cv2
 import numpy as np
-from utils.video import camera_reader
+from src.utils.video import camera_reader
 import mediapipe as mp
 from src import Landmarks, nn_parser
-from utils.tts import speak
+from src.utils.tts import speak
 import pandas as pd
 import torch
 from collections import deque
