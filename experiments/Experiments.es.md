@@ -1,3 +1,4 @@
+[English](Experiments.md), [Español](Experiments.es.md)
 # ¿Qué tan posible es hacer traducción en tiempo real de LSA a español?
 
 En este documento voy a documentar mi proceso de pensamiento, qué probé, qué salió mal, y como tengo planeado seguir
